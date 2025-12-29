@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // atau mysql / sqlite / sqlserver
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  torens    Toren[]
+  createdAt DateTime @default(now())
+}
+
+model Toren {
+  id              String           @id @default(uuid())
+  name            String
+  location        String?
+  capacityLiter   Int
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  sensorReadings  SensorReading[]
+  pumps           Pump[]
+  createdAt       DateTime         @default(now())
+}
+
+model SensorReading {
+  id          String   @id @default(uuid())
+  torenId     String
+  toren       Toren    @relation(fields: [torenId], references: [id])
+  ph          Float
+  chlorine    Float
+  temperature Float
+  waterLevel  Float   // cm atau %
+  recordedAt  DateTime @default(now())
+
+  @@index([torenId, recordedAt])
+}
+
+model Pump {
+  id              String          @id @default(uuid())
+  torenId         String
+  toren           Toren           @relation(fields: [torenId], references: [id])
+  name            String
+  isActive        Boolean         @default(false)
+  lastActivatedAt DateTime?
+  activities      PumpActivity[]
+  createdAt       DateTime        @default(now())
+}
+
+model PumpActivity {
+  id          String        @id @default(uuid())
+  pumpId      String
+  pump        Pump          @relation(fields: [pumpId], references: [id])
+  action      PumpAction
+  triggeredBy TriggeredBy
+  createdAt   DateTime      @default(now())
+
+  @@index([pumpId, createdAt])
+}
+
+enum PumpAction {
+  ON
+  OFF
+}
+
+enum TriggeredBy {
+  USER
+  SYSTEM
+}
