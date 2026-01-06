@@ -96,9 +96,19 @@ export function RegisterForm() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="
+              w-full
+              bg-blue-500 text-white
+              hover:bg-blue-600
+              transition-colors duration-200
+            "
+          >
             {isLoading ? "Creating account..." : "Create Account"}
           </Button>
+
         </form>
       </CardContent>
     </Card>

@@ -65,9 +65,21 @@ export function LoginForm() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="
+              w-full
+              bg-blue-500 hover:bg-blue-600
+              text-white
+              focus-visible:ring-2 focus-visible:ring-blue-400
+              focus-visible:ring-offset-2
+            "
+            disabled={isLoading}
+          >
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
+
+
         </form>
       </CardContent>
     </Card>
