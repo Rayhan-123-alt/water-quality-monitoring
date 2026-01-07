@@ -1,98 +1,126 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { MapPin, Droplet, ArrowRight } from "lucide-react"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { LucideIcon, Zap, Droplets, Thermometer, FlaskConical } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
 
-interface TankCardProps {
-  tank: {
-    id: string
-    name: string
-    location: string
-    capacity: number
-    waterLevel: number
-    pumpStatus: string
-    lastUpdated: string
-    sensorData: {
-      ph: number
-      chlorine: number
-      temperature: number
-    }
+type Tank = {
+  id: string
+  name: string
+  location: string
+  capacity: number
+  waterLevel: number
+  pumpStatus: "ON" | "OFF"
+  lastUpdated: string
+  sensorData: {
+    ph: number
+    chlorine: number
+    temperature: number
   }
 }
 
-export function TankCard({ tank }: TankCardProps) {
-  const getWaterLevelColor = (level: number) => {
-    if (level >= 70) return "text-success"
-    if (level >= 40) return "text-warning"
-    return "text-destructive"
-  }
+// Helper formatter (bisa di luar TankCard juga)
+const formatVolume = (value: number): string => {
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
 
-  const getProgressColor = (level: number) => {
-    if (level >= 70) return "bg-success"
-    if (level >= 40) return "bg-warning"
-    return "bg-destructive"
-  }
+const getStatusColor = (status: "ON" | "OFF") => {
+  return status === "ON"
+    ? "bg-green-100 text-green-800 border-green-200"
+    : "bg-orange-100 text-orange-800 border-orange-200"
+}
+
+const getWaterLevelColor = (percent: number) => {
+  if (percent < 20) return "bg-red-500"
+  if (percent <= 60) return "bg-yellow-500"
+  return "bg-emerald-500"
+}
+
+export function TankCard({ tank }: { tank: Tank }) {
+  const waterPercent = (tank.waterLevel / tank.capacity) * 100
+  const lastUpdated = new Date(tank.lastUpdated)
+
+  const sensorItems = [
+    { label: "pH", value: tank.sensorData.ph.toFixed(1), icon: FlaskConical, unit: "", color: tank.sensorData.ph >= 6.5 && tank.sensorData.ph <= 8.5 ? "text-emerald-600" : "text-amber-600" },
+    { label: "Cl₂", value: tank.sensorData.chlorine.toFixed(2), icon: Droplets, unit: "ppm", color: tank.sensorData.chlorine >= 0.2 && tank.sensorData.chlorine <= 4.0 ? "text-emerald-600" : "text-amber-600" },
+    { label: "Temp", value: tank.sensorData.temperature.toFixed(1), icon: Thermometer, unit: "°C", color: tank.sensorData.temperature <= 30 ? "text-emerald-600" : "text-amber-600" },
+  ]
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
+    <Card className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div className="p-5">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg">{tank.name}</CardTitle>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              {tank.location}
-            </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">{tank.name}</h3>
+            <p className="text-sm text-muted-foreground">{tank.location}</p>
           </div>
           <Badge
-            variant={tank.pumpStatus === "ON" ? "default" : "secondary"}
-            className={cn(tank.pumpStatus === "ON" && "bg-success text-success-foreground")}
+            variant="outline"
+            className={`px-3 py-1 font-medium border ${getStatusColor(tank.pumpStatus)}`}
           >
+            <Zap className="mr-1 h-3 w-3" />
             {tank.pumpStatus}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Water Level</span>
-            <span className={cn("font-semibold", getWaterLevelColor(tank.waterLevel))}>{tank.waterLevel}%</span>
+
+        {/* Water Level Bar */}
+        <div className="mt-4">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Water Level</span>
+            <span>{Math.round(waterPercent)}%</span>
           </div>
-          <Progress value={tank.waterLevel} className="h-2" indicatorClassName={getProgressColor(tank.waterLevel)} />
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Droplet className="h-3 w-3" />
-            {((tank.capacity * tank.waterLevel) / 100).toLocaleString()} / {tank.capacity.toLocaleString()} L
+          <div className="h-2.5 w-full rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className={`h-full ${getWaterLevelColor(waterPercent)} transition-all duration-500`}
+              style={{ width: `${waterPercent}%` }}
+            />
           </div>
+          
+          <p className="mt-1 text-xs">
+            <span className="font-medium">
+              {waterPercent < 20 
+                ? "Rendah" 
+                : waterPercent <= 60 
+                  ? "Sedang" 
+                  : "Aman"}
+            </span>{" "}
+            <span className="text-muted-foreground">
+              ({formatVolume(tank.waterLevel)} L / {formatVolume(tank.capacity)} L)
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <div className="mx-5 h-px bg-border" />
+
+      <div className="p-5">
+        <div className="grid grid-cols-3 gap-3">
+          {sensorItems.map((item, i) => {
+            const Icon = item.icon
+            return (
+              <div key={i} className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Icon className={`h-4 w-4 ${item.color}`} />
+                </div>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+                <p className={`text-sm font-medium ${item.color}`}>
+                  {item.value}
+                  {item.unit && <span className="text-xs text-muted-foreground ml-0.5">{item.unit}</span>}
+                </p>
+              </div>
+            )
+          })}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 pt-2 border-t">
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground">pH</div>
-            <div className="text-sm font-medium">{tank.sensorData.ph}</div>
-          </div>
-          <div className="text-center border-x">
-            <div className="text-xs text-muted-foreground">Chlorine</div>
-            <div className="text-sm font-medium">{tank.sensorData.chlorine} mg/L</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground">Temp</div>
-            <div className="text-sm font-medium">{tank.sensorData.temperature}°C</div>
-          </div>
+        <div className="mt-4 flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">Last updated:</span>
+          <span className="font-medium text-foreground">
+            {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+          </span>
         </div>
-
-        <div className="flex items-center justify-between pt-2">
-          <span className="text-xs text-muted-foreground">Updated {tank.lastUpdated}</span>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href={`/dashboard/tank/${tank.id}`}>
-              Details
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
-          </Button>
-        </div>
-      </CardContent>
+      </div>
     </Card>
   )
 }

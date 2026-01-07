@@ -27,11 +27,25 @@ export function RegisterForm() {
 
     setIsLoading(true)
 
-    // Simulate registration - in production this would call an API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      })
 
-    // Redirect to dashboard
-    router.push("/dashboard")
+      if (res.ok) {
+        router.push("/dashboard")
+      } else {
+        const data = await res.json()
+        alert(data?.error || "Registration failed")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("An unexpected error occurred")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
